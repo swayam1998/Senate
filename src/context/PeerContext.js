@@ -8,73 +8,8 @@ export const usePeer = () => useContext(PeerContext);
 
 const PeerProvider = ({ children }) => {
     var peerConnections = [];
-    var localStreams = [];
-    var remoteStreams = [];
-    
-    const callerVideo = useRef();
-    const calleeVideo = useRef();
-    // const pc = new RTCPeerConnection({
-    //     iceServers: [
-    //         {
-    //             urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
-    //         },
-    //     ],
-    //     iceCandidatePoolSize: 10,
-    // });
-    // const [localStream, setLocalStream] = useState(null);
-    // const [remoteStream, setRemoteStream] = useState(null);
-
-
-    // useEffect(() => {
-    //     navigator.mediaDevices.getUserMedia({ video: false, audio: true })
-    //     .then((stream) => {
-    //         setLocalStream(stream);
-    //         setRemoteStream(new MediaStream());
-    //     })
-
-    // }, []);
-
-    
-    // if(localStream){
-    //     localStream.getTracks().forEach((track) => {
-    //         pc.addTrack(track, localStream);
-    //     });
-        
-    //     pc.ontrack = (event) => {
-    //         event.streams[0].getTracks().forEach((track) => {
-    //             remoteStream.addTrack(track);
-    //         });
-
-    //     };
-        
-    //     callerVideo.current.srcObject = localStream;
-    //     calleeVideo.current.srcObject = remoteStream;
-    // }
-
-    const handleOnIceCandidate = (event, offerCollection) => {
-        console.log(event);
-        event.candidate && offerCollection.add(event.candidate.toJSON());
-    };
-
-    const handleOnNegotiationNeeded = async (peerConnection, userDoc) => {
-        try {
-            const offerDescription = await peerConnection.createOffer();
-            // if (peerConnection.signalingState !== "stable") {
-            //     return;
-            // }
-            await peerConnection.setLocalDescription(offerDescription);
-
-            const offer = {
-                sdp: offerDescription.sdp,
-                type: offerDescription.type,
-            };
-
-            await userDoc.set({ offer });
-
-        } catch (error) {
-            console.log(error);
-        }
-    };
+    const [localStreams, setLocalStreams] = useState([]);
+    const [remoteStreams, setRemoteStreams] = useState([]);
 
     // creates and sets up a peer connection and adds it in peerConnections array
     const createCall = async(callCollection) => {
@@ -93,6 +28,7 @@ const PeerProvider = ({ children }) => {
             iceCandidatePoolSize: 10,
         });
 
+        //refactor and get local stream once
         const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         const remoteStream = new MediaStream();
 
@@ -106,11 +42,11 @@ const PeerProvider = ({ children }) => {
             });
         };
 
-        localStreams.push(localStream);
-        remoteStreams.push(remoteStream);
+        setLocalStreams(prevState => [...prevState, localStream]);
+        setRemoteStreams(prevState => [...prevState, remoteStream]);
 
         peerConnection.onicecandidate = (event) => {
-            console.log("ICE create: ", event)
+            // console.log("ICE create: ", event)
             event.candidate && offerCandidateCollection.add(event.candidate.toJSON());;
         }
 
@@ -179,15 +115,12 @@ const PeerProvider = ({ children }) => {
 
         const senateDoc = firestore.collection('senates').doc(senateId);
         const senateSnapshot = await senateDoc.get();
-        console.log("Using flat map", [senateSnapshot.data()].flatMap(x => [x]));
         const remoteUsers = Object.entries(senateSnapshot.data()).map(e => ({ [e[0]]: e[1] }));
-        console.log(remoteUsers);
 
         for (const user of remoteUsers) {
-            console.log(user);
+            // console.log(user);
             const userUid = (Object.keys(user))[0];
             const callUid = (Object.values(user))[0];
-            console.log(userUid, " : ", callUid);
             
             const callDoc = senateDoc.collection(userUid).doc(callUid);
             const answerCandidateCollection = callDoc.collection('answerCandidates');
@@ -219,7 +152,7 @@ const PeerProvider = ({ children }) => {
             remoteStreams.push(remoteStream);
 
             peerConnection.onicecandidate = (event) => {
-                console.log("ICE join: ",event);
+                // console.log("ICE join: ",event);
                 event.candidate && answerCandidateCollection.add(event.candidate.toJSON());
             };
 
@@ -252,87 +185,13 @@ const PeerProvider = ({ children }) => {
         createCall(senateDoc.collection(userUid));
     }
 
-    // const call = async() => {
-    //     const callDoc = firestore.collection('calls').doc();
-    //     const offerCandidate = callDoc.collection('offerCandidate');
-    //     const answerCandidate = callDoc.collection('answerCandidate');
-
-    //     pc.onicecandidate = (event) => {
-    //         event.candidate && offerCandidate.add(event.candidate.toJSON());
-    //     };
-
-    //     const offerDescription = await pc.createOffer();
-    //     await pc.setLocalDescription(offerDescription);
-
-    //     const offer = {
-    //         sdp: offerDescription.sdp,
-    //         type: offerDescription.type,
-    //     };
-
-    //     await callDoc.set({ offer });
-
-    //     // Listen for remote answer
-    //     callDoc.onSnapshot((snapshot) => {
-    //         const data = snapshot.data();
-    //         if (!pc.currentRemoteDescription && data?.answer) {
-    //             const answerDescription = new RTCSessionDescription(data.answer);
-    //             pc.setRemoteDescription(answerDescription);
-    //         }
-    //     });
-
-    //     // When answered, add candidate to peer connection
-    //     answerCandidate.onSnapshot((snapshot) => {
-    //         snapshot.docChanges().forEach((change) => {
-    //             if (change.type === 'added') {
-    //                 let data = change.doc.data();
-    //                 const candidate = new RTCIceCandidate(data);
-    //                 pc.addIceCandidate(candidate);
-    //             }
-    //         });
-    //     });
-    //     return callDoc.id;
-    // };
-
-    // const answer = async( docId ) => {
-    //     const callDoc = firestore.collection('calls').doc(docId);
-    //     const answerCandidate = callDoc.collection('answerCandidate');
-    //     const offerCandidate = callDoc.collection('offerCandidate');
-
-    //     pc.onicecandidate = (event) => {
-    //         event.candidate && answerCandidate.add(event.candidate.toJSON());
-    //     };
-
-    //     const callData = (await callDoc.get()).data();
-    //     const offerDescription = callData.offer;
-    //     await pc.setRemoteDescription(new RTCSessionDescription(offerDescription));
-
-    //     const answerDescription = await pc.createAnswer();
-    //     await pc.setLocalDescription(answerDescription);
-
-    //     const answer = {
-    //         type: answerDescription.type,
-    //         sdp: answerDescription.sdp,
-    //     };
-
-    //     await callDoc.update({ answer });
-
-    //     offerCandidate.onSnapshot((snapshot) => {
-    //         snapshot.docChanges().forEach((change) => {
-    //             if (change.type === 'added') {
-    //                 let data = change.doc.data();
-    //                 pc.addIceCandidate(new RTCIceCandidate(data));
-    //             }
-    //         });
-    //     });
-    // };
-
     const hangup = () => {
         console.log(peerConnections);
     }
 
     const value = {
-        callerVideo,
-        calleeVideo,
+        localStreams,
+        remoteStreams,
         createSenate,
         joinSenate,
         hangup
