@@ -33,13 +33,18 @@ const VideoPlayer = () => {
                 </Grid>
             </Paper>
             { 
-                remoteStreams.map((stream, index) => (
-                    <Paper key={index} style={{ padding: 10, margin: 10 }}>
-                        <Grid>
-                            <Video stream={stream} />
-                        </Grid>
-                    </Paper>
-                ))
+                remoteStreams.map((stream, index) => {
+                    if(stream.active)
+                        return (
+                            <Paper key={index} style={{ padding: 10, margin: 10 }}>
+                                <Grid>
+                                    <Typography>Callee: {index+1}</Typography>
+                                    <Video stream={stream} />
+                                </Grid>
+                            </Paper>
+                        )
+                    else return null;
+                })
             }
         </Grid>
     )

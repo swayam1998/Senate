@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { firestore } from '../firebase/config';
+import firebase from 'firebase';
 import { nanoid } from 'nanoid';
 
 const PeerContext = createContext();
@@ -14,6 +15,8 @@ const PeerProvider = ({ children }) => {
     // creates and sets up a peer connection and adds it in peerConnections array
     const createCall = async(callCollection) => {
         const callUid = nanoid();
+        const userUid = callCollection.id;
+        var remoteUserUid = null;
 
         const callDoc = callCollection.doc(callUid);
         const offerCandidateCollection = callDoc.collection('offerCandidates');
@@ -54,21 +57,23 @@ const PeerProvider = ({ children }) => {
         await peerConnection.setLocalDescription(offerDescription);
 
         const offer = {
+            userUid: userUid,
             sdp: offerDescription.sdp,
             type: offerDescription.type,
         };
 
         await callDoc.set({ offer });
 
-        callDoc.onSnapshot((snapshot) => {
+        const unsubscribeCallDoc = callDoc.onSnapshot((snapshot) => {
             const data = snapshot.data();
             if (!peerConnection.currentRemoteDescription && data?.answer) {
+                remoteUserUid = data.answer.userUid;
                 const answerDescription = new RTCSessionDescription(data.answer);
                 peerConnection.setRemoteDescription(answerDescription);
             }
         });
 
-        answerCandidateCollection.onSnapshot((snapshot) => {
+        const unsubscribeAnswerCandidate = answerCandidateCollection.onSnapshot((snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     let data = change.doc.data();
@@ -83,20 +88,44 @@ const PeerProvider = ({ children }) => {
                 case "connected":
                     createCall(callCollection);
                     break;
-            
+                case "disconnected":
+                    setRemoteStreams(prevState => prevState.filter((stream) => stream !== remoteStream));
+
+                    callCollection.parent.update({
+                        [remoteUserUid]: firebase.firestore.FieldValue.delete()
+                    }, { merge: true });
+                    unsubscribeCallDoc();
+                    unsubscribeAnswerCandidate();
+                    closeCall(peerConnection);
+                    break;            
                 default:
                     break;
             }
         }
 
-        const userUid = callCollection.id;
         callCollection.parent.set({
             [userUid] : callUid
         }, {merge: true});
 
         peerConnections.push(peerConnection);
-    }
+    };
 
+    const closeCall = (peerConnection) => {
+        peerConnection.ontrack = null;
+        peerConnection.onicecandidate = null;
+        peerConnection.onconnectionstatechange = null;
+        peerConnection.oniceconnectionstatechange = null;
+        peerConnection.onsignalingstatechange = null;
+        peerConnection.onicegatheringstatechange = null;
+        peerConnection.onnotificationneeded = null;
+
+        peerConnection.getTransceivers().forEach(transceiver => {
+            transceiver.stop();
+        });
+
+        peerConnection.close();
+        peerConnection = null;
+    };
 
     const createSenate = async() => {
         const senateUid = nanoid();
@@ -111,7 +140,7 @@ const PeerProvider = ({ children }) => {
     };
 
     const joinSenate = async(senateId) => {
-        const userUid = nanoid();
+        const localUserUid = nanoid();
 
         const senateDoc = firestore.collection('senates').doc(senateId);
         const senateSnapshot = await senateDoc.get();
@@ -121,6 +150,9 @@ const PeerProvider = ({ children }) => {
             // console.log(user);
             const userUid = (Object.keys(user))[0];
             const callUid = (Object.values(user))[0];
+
+            if(callUid === 'Disconnected')
+                continue;
             
             const callDoc = senateDoc.collection(userUid).doc(callUid);
             const answerCandidateCollection = callDoc.collection('answerCandidates');
@@ -164,13 +196,14 @@ const PeerProvider = ({ children }) => {
             await peerConnection.setLocalDescription(answerDescription);
 
             const answer = {
+                userUid: localUserUid,
                 type: answerDescription.type,
                 sdp: answerDescription.sdp
             };
 
             await callDoc.update({ answer });
 
-            offerCandidateCollection.onSnapshot((snapshot) => {
+            const unsubscribeOfferCandidate = offerCandidateCollection.onSnapshot((snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     if(change.type === 'added'){
                         let data = change.doc.data();
@@ -179,10 +212,28 @@ const PeerProvider = ({ children }) => {
                 });
             });
 
+            peerConnection.onconnectionstatechange = (event) => {
+                switch (peerConnection.connectionState) {
+                    case "disconnected":
+                        setRemoteStreams(prevState => prevState.filter((stream) => stream !== remoteStream));
+
+                        senateDoc.update({
+                            [userUid]: firebase.firestore.FieldValue.delete()
+                        }, { merge: true });
+
+                        unsubscribeOfferCandidate();
+                        closeCall(peerConnection);
+                        break;
+                
+                    default:
+                        break;
+                }
+            }
+
             peerConnections.push(peerConnection);
         }
 
-        createCall(senateDoc.collection(userUid));
+        createCall(senateDoc.collection(localUserUid));
     }
 
     const hangup = () => {
