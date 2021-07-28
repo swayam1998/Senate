@@ -3,7 +3,7 @@ import { Button, Grid, Typography, TextField } from '@material-ui/core';
 import { usePeer } from '../context/PeerContext';
 
 const SideBar = ({ children }) => {
-    const { createSenate, joinSenate } = usePeer();
+    const { isConnected, setIsConnected, createSenate, joinSenate } = usePeer();
     const [senateId, setSenateId] = useState();
     const joinSenateId = useRef();
     
@@ -20,6 +20,7 @@ const SideBar = ({ children }) => {
     };
 
     const hangup = () => {
+        setIsConnected(false);
         window.location.reload();
     }
 
@@ -27,10 +28,24 @@ const SideBar = ({ children }) => {
         <Grid style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Typography gutterBottom variant="h6">Make a call</Typography>
             <Grid style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
-                <Button style={{ margin: 10 }} variant="contained" color="primary" fullWidth onClick={makeSenate}>
+                <Button 
+                    style={{ margin: 10 }} 
+                    variant="contained" 
+                    color="primary" 
+                    disabled={isConnected} 
+                    fullWidth 
+                    onClick={makeSenate}
+                >
                     Create Senate
                 </Button>
-                <Button style={{ margin: 10 }} variant="contained" color="secondary" fullWidth onClick={hangup}>
+                <Button 
+                    style={{ margin: 10 }} 
+                    variant="contained" 
+                    color="secondary" 
+                    disabled={!isConnected} 
+                    fullWidth 
+                    onClick={hangup}
+                >
                     Hang up
                 </Button>
             </Grid>

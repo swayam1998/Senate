@@ -8,7 +8,8 @@ const PeerContext = createContext();
 export const usePeer = () => useContext(PeerContext);
 
 const PeerProvider = ({ children }) => {
-    var peerConnections = [];
+    const [peerConnections, setPeerConnections] = useState([]);
+    const [isConnected, setIsConnected] = useState(false);
     const [localStream, setLocalStream] = useState();
     const [remoteStreams, setRemoteStreams] = useState([]);
 
@@ -94,6 +95,7 @@ const PeerProvider = ({ children }) => {
             switch (peerConnection.connectionState) {
                 case "connected":
                     createCall(callCollection);
+                    setIsConnected(true);
                     break;
                 case "disconnected":
                     setRemoteStreams(prevState => prevState.filter((stream) => stream !== remoteStream));
@@ -114,10 +116,12 @@ const PeerProvider = ({ children }) => {
             [userUid] : callUid
         }, {merge: true});
 
-        peerConnections.push(peerConnection);
+        setPeerConnections(prevState => [...prevState, peerConnection]);
     };
 
     const closeCall = (peerConnection) => {
+        setPeerConnections(prevState => prevState.filter( pc => pc != peerConnection));
+        
         peerConnection.ontrack = null;
         peerConnection.onicecandidate = null;
         peerConnection.onconnectionstatechange = null;
@@ -229,6 +233,9 @@ const PeerProvider = ({ children }) => {
 
             peerConnection.onconnectionstatechange = (event) => {
                 switch (peerConnection.connectionState) {
+                    case "connected":
+                        setIsConnected(true);
+                        break;
                     case "disconnected":
                         setRemoteStreams(prevState => prevState.filter((stream) => stream !== remoteStream));
 
@@ -243,8 +250,7 @@ const PeerProvider = ({ children }) => {
                         break;
                 }
             }
-
-            peerConnections.push(peerConnection);
+            setPeerConnections(prevState => [...prevState, peerConnection]);
         }
 
         createCall(senateDoc.collection(localUserUid));
@@ -254,12 +260,44 @@ const PeerProvider = ({ children }) => {
         console.log(peerConnections);
     }
 
+    const toggleUserVideo = () => {
+        for(let peerConnection of peerConnections){
+
+            let senderList = peerConnection.getSenders();
+            if(senderList){
+                senderList.forEach( sender => {
+                    if(sender.track.kind === "video"){
+                        sender.track.enabled = !sender.track.enabled;
+                    }
+                });
+            }
+        }
+    };
+
+    const toggleUserAudio = () => {
+        for(let peerConnection of peerConnections){
+
+            let senderList = peerConnection.getSenders();
+            if(senderList){
+                senderList.forEach( sender => {
+                    if(sender.track.kind === "audio"){
+                        sender.track.enabled = !sender.track.enabled;
+                    }
+                });
+            }
+        }
+    };
+
     const value = {
+        isConnected,
+        setIsConnected,
         localStream,
         remoteStreams,
         createSenate,
         joinSenate,
-        hangup
+        hangup,
+        toggleUserVideo,
+        toggleUserAudio
     };
 
     return (
@@ -269,4 +307,4 @@ const PeerProvider = ({ children }) => {
     )
 }
 
-export default PeerProvider;
+export default PeerProvider;    

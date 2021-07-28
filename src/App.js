@@ -24,7 +24,7 @@ function App() {
                 </Grid>
                 <Grid item style={{ margin: 10, display: 'flex', justifyContent: 'center' }}>
                     <SideBar>
-                        <Notifications/>
+                        {/* <Notifications/> */}
                     </SideBar>
                 </Grid>
             </Container>
