@@ -31,7 +31,7 @@ const SideBar = ({ children }) => {
                     Create Senate
                 </Button>
                 <Button style={{ margin: 10 }} variant="contained" color="secondary" fullWidth onClick={hangup}>
-                    Hangup
+                    Hang up
                 </Button>
             </Grid>
             {

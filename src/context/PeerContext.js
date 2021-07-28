@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { firestore } from '../firebase/config';
 import firebase from 'firebase';
 import { nanoid } from 'nanoid';
@@ -9,7 +9,7 @@ export const usePeer = () => useContext(PeerContext);
 
 const PeerProvider = ({ children }) => {
     var peerConnections = [];
-    const [localStreams, setLocalStreams] = useState([]);
+    const [localStream, setLocalStream] = useState();
     const [remoteStreams, setRemoteStreams] = useState([]);
 
     // creates and sets up a peer connection and adds it in peerConnections array
@@ -32,21 +32,28 @@ const PeerProvider = ({ children }) => {
         });
 
         //refactor and get local stream once
-        const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         const remoteStream = new MediaStream();
 
-        localStream.getTracks().forEach((track) => {
-            peerConnection.addTrack(track, localStream);
-        });
+        if(!localStream){
+            const userStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            setLocalStream(userStream);
 
+            userStream.getTracks().forEach((track) => {
+                peerConnection.addTrack(track, userStream);
+            });
+        }else {
+            localStream.getTracks().forEach((track) => {
+                peerConnection.addTrack(track, localStream);
+            });
+        }
+        
         peerConnection.ontrack = (event) => {
             event.streams[0].getTracks().forEach((track) => {
                 remoteStream.addTrack(track);
             });
         };
 
-        setLocalStreams(prevState => [...prevState, localStream]);
-        setRemoteStreams(prevState => [...prevState, remoteStream]);
+        setRemoteStreams(prevState => [...prevState, remoteStream]);        
 
         peerConnection.onicecandidate = (event) => {
             // console.log("ICE create: ", event)
@@ -64,7 +71,7 @@ const PeerProvider = ({ children }) => {
 
         await callDoc.set({ offer });
 
-        const unsubscribeCallDoc = callDoc.onSnapshot((snapshot) => {
+        callDoc.onSnapshot((snapshot) => {
             const data = snapshot.data();
             if (!peerConnection.currentRemoteDescription && data?.answer) {
                 remoteUserUid = data.answer.userUid;
@@ -73,7 +80,7 @@ const PeerProvider = ({ children }) => {
             }
         });
 
-        const unsubscribeAnswerCandidate = answerCandidateCollection.onSnapshot((snapshot) => {
+        answerCandidateCollection.onSnapshot((snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     let data = change.doc.data();
@@ -91,11 +98,11 @@ const PeerProvider = ({ children }) => {
                 case "disconnected":
                     setRemoteStreams(prevState => prevState.filter((stream) => stream !== remoteStream));
 
+                    //check whether remote user is present in senate document
                     callCollection.parent.update({
                         [remoteUserUid]: firebase.firestore.FieldValue.delete()
                     }, { merge: true });
-                    unsubscribeCallDoc();
-                    unsubscribeAnswerCandidate();
+
                     closeCall(peerConnection);
                     break;            
                 default:
@@ -119,9 +126,10 @@ const PeerProvider = ({ children }) => {
         peerConnection.onicegatheringstatechange = null;
         peerConnection.onnotificationneeded = null;
 
-        peerConnection.getTransceivers().forEach(transceiver => {
-            transceiver.stop();
-        });
+        // peerConnection.getTransceivers().forEach(transceiver => {
+        //     console.log(transceiver);
+        //     transceiver.stop();
+        // });
 
         peerConnection.close();
         peerConnection = null;
@@ -167,12 +175,20 @@ const PeerProvider = ({ children }) => {
                 iceCandidatePoolSize: 10,
             });
 
-            const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            const remoteStream = new MediaStream();
-
-            localStream.getTracks().forEach((track) => {
-                peerConnection.addTrack(track, localStream);
-            });
+            
+            const remoteStream = new MediaStream();            
+            if(!localStream){
+                const userStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                setLocalStream(userStream);
+    
+                userStream.getTracks().forEach((track) => {
+                    peerConnection.addTrack(track, userStream);
+                });
+            }else {
+                localStream.getTracks().forEach((track) => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
 
             peerConnection.ontrack = (event) => {
                 event.streams[0].getTracks().forEach((track) => {
@@ -180,8 +196,7 @@ const PeerProvider = ({ children }) => {
                 });
             };
 
-            localStreams.push(localStream);
-            remoteStreams.push(remoteStream);
+            setRemoteStreams(prevState => [...prevState, remoteStream]);
 
             peerConnection.onicecandidate = (event) => {
                 // console.log("ICE join: ",event);
@@ -203,7 +218,7 @@ const PeerProvider = ({ children }) => {
 
             await callDoc.update({ answer });
 
-            const unsubscribeOfferCandidate = offerCandidateCollection.onSnapshot((snapshot) => {
+            offerCandidateCollection.onSnapshot((snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     if(change.type === 'added'){
                         let data = change.doc.data();
@@ -221,7 +236,6 @@ const PeerProvider = ({ children }) => {
                             [userUid]: firebase.firestore.FieldValue.delete()
                         }, { merge: true });
 
-                        unsubscribeOfferCandidate();
                         closeCall(peerConnection);
                         break;
                 
@@ -241,7 +255,7 @@ const PeerProvider = ({ children }) => {
     }
 
     const value = {
-        localStreams,
+        localStream,
         remoteStreams,
         createSenate,
         joinSenate,

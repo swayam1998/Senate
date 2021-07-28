@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Grid, Paper, Typography } from '@material-ui/core';
 import { usePeer } from '../context/PeerContext';
 
-const Video = ({ stream }) => {
+const Video = ({ stream, muted }) => {
     const ref = useRef();
 
     useEffect(() => {
@@ -10,26 +10,25 @@ const Video = ({ stream }) => {
     }, [stream]);
 
     return (
-        <video playsInline muted ref={ref} autoPlay style={{ width: 500 }} />
+        <video playsInline ref={ref} muted={muted} autoPlay style={{ width: 500 }} />
     );
 };
 
 const VideoPlayer = () => {
-    const { localStreams, remoteStreams } = usePeer();
+    const { localStream, remoteStreams } = usePeer();
+    const renderCount = useRef(0);
 
     useEffect(() => {
-        console.log("localStreams:", localStreams);
-        console.log("remoteStreams:", remoteStreams);
-
-    }, [localStreams, remoteStreams])
+        renderCount.current += 1;
+        console.log(renderCount.current);
+    });
 
     return (
         <Grid container style={{ justifyContent: 'center' }}>
             <Paper style={{ padding: 10, margin: 10 }}>
                 <Grid>
                     <Typography>Caller</Typography>
-                    <Video stream={localStreams[0]} />
-                    {/* <video playsInline muted ref={ localVideo }  autoPlay style={{ width: 500}} /> */}
+                    <Video stream={localStream} muted={true} />
                 </Grid>
             </Paper>
             { 
@@ -39,7 +38,7 @@ const VideoPlayer = () => {
                             <Paper key={index} style={{ padding: 10, margin: 10 }}>
                                 <Grid>
                                     <Typography>Callee: {index+1}</Typography>
-                                    <Video stream={stream} />
+                                    <Video stream={stream} muted={false} />
                                 </Grid>
                             </Paper>
                         )
