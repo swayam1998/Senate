@@ -2,9 +2,8 @@ import React, { useRef, useState } from 'react'
 import { Button, Grid, Typography, TextField } from '@material-ui/core';
 import { usePeer } from '../context/PeerContext';
 
-const SideBar = ({ children }) => {
+const SideBar = () => {
     const { inSenate, createSenate, joinSenate } = usePeer();
-    const [senateId, setSenateId] = useState();
     const joinSenateId = useRef();
     
     const handleSenateId = (e) => {
@@ -12,7 +11,7 @@ const SideBar = ({ children }) => {
     };
 
     const makeSenate = async() => {
-        setSenateId(await createSenate());
+        await createSenate();
     };
 
     const joinToSenate = () => {
@@ -20,35 +19,24 @@ const SideBar = ({ children }) => {
         console.log(response);
     };
 
-    return (
-        <>
-            {!inSenate ? (
-                <Grid style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Grid style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
-                        <Button 
-                            style={{ margin: 10 }} 
-                            variant="contained" 
-                            color="primary"
-                            fullWidth 
-                            onClick={makeSenate}
-                        >
-                            Create Senate
-                        </Button>
-                    </Grid>
-                    <TextField label="Senate ID" onChange={handleSenateId} fullWidth />
-                    <Button style={{ margin: 10 }} variant="contained" color="primary" fullWidth onClick={joinToSenate}>
+    return !inSenate ? (
+                <Grid item xs={5} sm={4} md={3} lg={2}>
+                    <Button 
+                        style={{ marginBottom: 10 }} 
+                        variant="contained" 
+                        color="primary"
+                        fullWidth 
+                        onClick={makeSenate}
+                    >
+                        Create Senate
+                    </Button>
+                    <Typography>or</Typography>
+                    <TextField variant="outlined" label="Senate ID" onChange={handleSenateId} fullWidth />
+                    <Button style={{ marginTop: 10 }} variant="contained" color="secondary" fullWidth onClick={joinToSenate}>
                         Join Senate
                     </Button>
-                    {children}
                 </Grid>
-            ) : (
-                <Grid style={{ flexDirection: 'column' }}>
-                    <Typography gutterBottom variant="h4">Share Senate ID{"\n"}</Typography>
-                    <Typography gutterBottom variant="h6">{senateId}</Typography>
-                </Grid>
-            )}
-        </>        
-    )
+            ) : null
 }
 
 export default SideBar

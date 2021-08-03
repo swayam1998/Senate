@@ -148,7 +148,7 @@ const PeerProvider = ({ children }) => {
         const userCallCollection = senateDoc.collection(userUid);
         
         createCall(userCallCollection);
-        setInSenate(true);
+        setInSenate(senateDoc.id);
         return senateDoc.id;
     };
 
@@ -160,7 +160,7 @@ const PeerProvider = ({ children }) => {
             return "Senate ID doesn't exist";
         }
         
-        setInSenate(true);
+        setInSenate(senateId);
         const senateSnapshot = await senateDoc.get();
         const remoteUsers = Object.entries(senateSnapshot.data()).map(e => ({ [e[0]]: e[1] }));
 
