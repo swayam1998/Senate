@@ -3,7 +3,7 @@ import { Button, Grid, Typography, TextField } from '@material-ui/core';
 import { usePeer } from '../context/PeerContext';
 
 const SideBar = ({ children }) => {
-    const { isConnected, setIsConnected, createSenate, joinSenate } = usePeer();
+    const { inSenate, createSenate, joinSenate } = usePeer();
     const [senateId, setSenateId] = useState();
     const joinSenateId = useRef();
     
@@ -16,48 +16,38 @@ const SideBar = ({ children }) => {
     };
 
     const joinToSenate = () => {
-        joinSenate(joinSenateId.current);
+        const response = joinSenate(joinSenateId.current);
+        console.log(response);
     };
 
-    const hangup = () => {
-        setIsConnected(false);
-        window.location.reload();
-    }
-
     return (
-        <Grid style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography gutterBottom variant="h6">Make a call</Typography>
-            <Grid style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
-                <Button 
-                    style={{ margin: 10 }} 
-                    variant="contained" 
-                    color="primary" 
-                    disabled={isConnected} 
-                    fullWidth 
-                    onClick={makeSenate}
-                >
-                    Create Senate
-                </Button>
-                <Button 
-                    style={{ margin: 10 }} 
-                    variant="contained" 
-                    color="secondary" 
-                    disabled={!isConnected} 
-                    fullWidth 
-                    onClick={hangup}
-                >
-                    Hang up
-                </Button>
-            </Grid>
-            {
-                senateId && <Typography gutterBottom variant="h6">{senateId}</Typography>
-            }
-            <TextField label="Senate ID" onChange={handleSenateId} fullWidth />
-            <Button style={{ margin: 10 }} variant="contained" color="primary" fullWidth onClick={joinToSenate}>
-                Join Senate
-            </Button>
-            {children}
-        </Grid>
+        <>
+            {!inSenate ? (
+                <Grid style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Grid style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
+                        <Button 
+                            style={{ margin: 10 }} 
+                            variant="contained" 
+                            color="primary"
+                            fullWidth 
+                            onClick={makeSenate}
+                        >
+                            Create Senate
+                        </Button>
+                    </Grid>
+                    <TextField label="Senate ID" onChange={handleSenateId} fullWidth />
+                    <Button style={{ margin: 10 }} variant="contained" color="primary" fullWidth onClick={joinToSenate}>
+                        Join Senate
+                    </Button>
+                    {children}
+                </Grid>
+            ) : (
+                <Grid style={{ flexDirection: 'column' }}>
+                    <Typography gutterBottom variant="h4">Share Senate ID{"\n"}</Typography>
+                    <Typography gutterBottom variant="h6">{senateId}</Typography>
+                </Grid>
+            )}
+        </>        
     )
 }
 

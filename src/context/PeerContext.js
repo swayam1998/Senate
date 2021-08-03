@@ -9,6 +9,7 @@ export const usePeer = () => useContext(PeerContext);
 
 const PeerProvider = ({ children }) => {
     const [peerConnections, setPeerConnections] = useState([]);
+    const [inSenate, setInSenate] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [localStream, setLocalStream] = useState();
     const [remoteStreams, setRemoteStreams] = useState([]);
@@ -120,7 +121,7 @@ const PeerProvider = ({ children }) => {
     };
 
     const closeCall = (peerConnection) => {
-        setPeerConnections(prevState => prevState.filter( pc => pc != peerConnection));
+        setPeerConnections(prevState => prevState.filter( pc => pc !== peerConnection));
         
         peerConnection.ontrack = null;
         peerConnection.onicecandidate = null;
@@ -147,7 +148,7 @@ const PeerProvider = ({ children }) => {
         const userCallCollection = senateDoc.collection(userUid);
         
         createCall(userCallCollection);
-
+        setInSenate(true);
         return senateDoc.id;
     };
 
@@ -155,6 +156,11 @@ const PeerProvider = ({ children }) => {
         const localUserUid = nanoid();
 
         const senateDoc = firestore.collection('senates').doc(senateId);
+        if(!senateDoc){
+            return "Senate ID doesn't exist";
+        }
+        
+        setInSenate(true);
         const senateSnapshot = await senateDoc.get();
         const remoteUsers = Object.entries(senateSnapshot.data()).map(e => ({ [e[0]]: e[1] }));
 
@@ -254,6 +260,7 @@ const PeerProvider = ({ children }) => {
         }
 
         createCall(senateDoc.collection(localUserUid));
+        return "Joined Senate"
     }
 
     const hangup = () => {
@@ -290,6 +297,7 @@ const PeerProvider = ({ children }) => {
 
     const value = {
         isConnected,
+        inSenate,
         setIsConnected,
         localStream,
         remoteStreams,

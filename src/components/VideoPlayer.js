@@ -2,13 +2,14 @@ import React, { useEffect, useRef, useState} from 'react';
 import { usePeer } from '../context/PeerContext';
 
 
-import { Grid, Paper, Typography, IconButton } from '@material-ui/core';
+import { Grid, Paper, Typography, IconButton, Button } from '@material-ui/core';
 import VideocamIcon from '@material-ui/icons/Videocam';
 import VideocamOffIcon from '@material-ui/icons/VideocamOff';
 import MicIcon from '@material-ui/icons/Mic';
 import MicOffIcon from '@material-ui/icons/MicOff';
+import CallEndRoundedIcon from '@material-ui/icons/CallEndRounded';
 
-const Video = ({ stream, muted }) => {
+const Video = ({ stream, muted, width, height }) => {
     const ref = useRef();
 
     useEffect(() => {
@@ -16,14 +17,23 @@ const Video = ({ stream, muted }) => {
     }, [stream]);
 
     return (
-        <video playsInline ref={ref} muted={muted} autoPlay style={{ width: 500 }} />
+        <video 
+            playsInline 
+            ref={ref} 
+            muted={muted} 
+            width={width} 
+            height={height} 
+            autoPlay  
+        />
     );
 };
 
 const VideoPlayer = () => {
     const [videoEnabled, setVideoEnabled] = useState(true);
     const [audioEnabled, setAudioEnabled] = useState(true);
-    const { localStream, remoteStreams, toggleUserVideo, toggleUserAudio } = usePeer();
+    const [selectedStream, setSelectedStream] = useState(null);
+    
+    const { inSenate, setIsConnected, localStream, remoteStreams, toggleUserVideo, toggleUserAudio } = usePeer();
 
     const handleVideoToggle = () => {
         toggleUserVideo();
@@ -36,41 +46,60 @@ const VideoPlayer = () => {
 
         setAudioEnabled(prev => !prev);
     };
+
+    const hangup = () => {
+        setIsConnected(false);
+        window.location.reload();
+    }
     
     return (
-        <Grid container style={{ flexDirection: 'column' }}>
-            <Grid container style={{ justifyContent: 'center' }}>
-                <Paper style={{ padding: 10, margin: 10 }}>
-                    <Grid>
-                        <Typography>Caller</Typography>
-                        <Video stream={localStream} muted={true} />
-                    </Grid>
-                </Paper>
+        <Grid style={{ display: 'flex', margin: 10, flexDirection: 'column' }}>
+            <Grid style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Button onClick={() => setSelectedStream(localStream)}>
+                    <Video 
+                        stream={localStream} 
+                        muted={true}
+                        width="300px"
+                        height="300px"                                    
+                    />
+                </Button>
                 { 
                     remoteStreams.map((stream, index) => {
                         if(stream.active)
                             return (
-                                <Paper key={index} style={{ padding: 10, margin: 10 }}>
-                                    <Grid>
-                                        <Typography>Callee: {index+1}</Typography>
-                                        <Video stream={stream} muted={false} />
-                                    </Grid>
-                                </Paper>
+                                <Button onClick={() => setSelectedStream(stream)}>
+                                    <Video stream={stream} muted={false} />
+                                </Button>
                             )
                         else return null
                     })
                 }
             </Grid>
+
+            {inSenate && (
             <Grid container style={{ justifyContent: 'center' }}>
-                <Grid style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
+                <Paper 
+                    style={{
+                        display: 'flex', 
+                        flexDirection: 'row', 
+                        justifyContent: 'center',
+                        paddingHorizontal: 10,
+                        borderRadius:20,
+                    }}
+                    elevation={5}
+                >
                     <IconButton onClick={() => handleVideoToggle()}>
                         { videoEnabled ? <VideocamIcon color="primary"/> : <VideocamOffIcon color="secondary"/> }
                     </IconButton>
                     <IconButton onClick={() => handleAudioToggle()}>
                         { audioEnabled ? <MicIcon color="primary"/> : <MicOffIcon color="secondary"/> }
                     </IconButton>
-                </Grid>
+                    <IconButton onClick={hangup}>
+                        { <CallEndRoundedIcon color="secondary"  />}
+                    </IconButton>
+                </Paper>
             </Grid>
+            )}
         </Grid>
     )
 }
