@@ -73,6 +73,8 @@ const PeerProvider = ({ children }) => {
 
         await callDoc.set({ offer });
 
+        peerConnection.onnegotiationneeded = () => {console.log("negotiation needed")};
+
         callDoc.onSnapshot((snapshot) => {
             const data = snapshot.data();
             if (!peerConnection.currentRemoteDescription && data?.answer) {
@@ -295,6 +297,57 @@ const PeerProvider = ({ children }) => {
         }
     };
 
+    const switchLocalMediaDevice = async({ audioId , videoId }) => {
+        let newAudioTrack = null;
+        let newVideoTrack = null;
+        if(audioId){
+            let newStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: audioId } })
+            newAudioTrack= newStream.getTracks()[0];
+        }
+        if(videoId){
+            let newStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: videoId } })
+            newVideoTrack = newStream.getTracks()[0];
+        }
+
+        if(newAudioTrack || newVideoTrack){
+            for (let peerConnection of peerConnections) {
+                let senderList = peerConnection.getSenders();
+                if (senderList) {
+                    senderList.forEach(sender => {
+                        if (sender.track.kind === "audio" && newAudioTrack) {
+                            sender.replaceTrack(newAudioTrack)
+                            .then(() => {
+                                let newStream = new MediaStream();
+                                localStream.getTracks().forEach(track => {
+                                    if(track.kind === 'audio'){
+                                        newStream.addTrack(newAudioTrack);
+                                    }else{
+                                        newStream.addTrack(track);
+                                    }
+                                })
+                                setLocalStream(newStream);
+                            });
+                        }
+                        if (sender.track.kind === "video" && newVideoTrack) {
+                            sender.replaceTrack(newVideoTrack)
+                            .then(() => {
+                                let newStream = new MediaStream();
+                                localStream.getTracks().forEach(track => {
+                                    if (track.kind === 'video') {
+                                        newStream.addTrack(newVideoTrack);
+                                    } else {
+                                        newStream.addTrack(track);
+                                    }
+                                })
+                                setLocalStream(newStream);
+                            });
+                        }
+                    });
+                }
+            }
+        }
+    };
+
     const value = {
         isConnected,
         inSenate,
@@ -305,7 +358,8 @@ const PeerProvider = ({ children }) => {
         joinSenate,
         hangup,
         toggleUserVideo,
-        toggleUserAudio
+        toggleUserAudio,
+        switchLocalMediaDevice
     };
 
     return (
