@@ -348,6 +348,66 @@ const PeerProvider = ({ children }) => {
         }
     };
 
+    const changeTracks = (track) => {
+
+    }
+
+    const startScreenShare = async() => {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia();
+        const screenTrack = screenStream.getTracks()[0];
+
+        const prevVideoTrack = localStream.getTracks().filter(track => track.kind === 'video' ? track : null)[0];
+        console.log(prevVideoTrack);
+        //localStream needs to be replaced only once
+        for (let peerConnection of peerConnections) {
+            let senderList = peerConnection.getSenders();
+            if (senderList) {
+                senderList.forEach(sender => {
+                    if (sender.track.kind === "video") {
+                        sender.replaceTrack(screenTrack)
+                            .then(() => {
+                                let newStream = new MediaStream();
+                                localStream.getTracks().forEach(track => {
+                                    if (track.kind === 'video') {
+                                        newStream.addTrack(screenTrack);
+                                    } else {
+                                        newStream.addTrack(track);
+                                    }
+                                })
+                                setLocalStream(newStream);
+                            });
+                    }
+                });
+            }
+        }
+
+        screenTrack.onended = (event) => {
+            console.log(event);
+            for (let peerConnection of peerConnections) {
+                let senderList = peerConnection.getSenders();
+                if (senderList) {
+                    senderList.forEach(sender => {
+                        if (sender.track.kind === "video") {
+                            sender.replaceTrack(prevVideoTrack)
+                                .then(() => {
+                                    let newStream = new MediaStream();
+                                    localStream.getTracks().forEach(track => {
+                                        if (track.kind === 'video') {
+                                            newStream.addTrack(prevVideoTrack);
+                                        } else {
+                                            newStream.addTrack(track);
+                                        }
+                                    })
+                                    setLocalStream(newStream);
+                                });
+                        }
+                    });
+                }
+            }
+        };
+        
+    }
+
     const value = {
         isConnected,
         inSenate,
@@ -359,7 +419,8 @@ const PeerProvider = ({ children }) => {
         hangup,
         toggleUserVideo,
         toggleUserAudio,
-        switchLocalMediaDevice
+        switchLocalMediaDevice,
+        startScreenShare
     };
 
     return (

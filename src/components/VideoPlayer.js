@@ -20,6 +20,7 @@ import MicIcon from '@material-ui/icons/Mic';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import CallEndRoundedIcon from '@material-ui/icons/CallEndRounded';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
+import PresentToAllIcon from '@material-ui/icons/PresentToAll';
 
 const Video = ({ stream, muted, width = '100%', height }) => {
     const ref = useRef();
@@ -57,7 +58,8 @@ const VideoPlayer = () => {
         remoteStreams, 
         toggleUserVideo, 
         toggleUserAudio,
-        switchLocalMediaDevice
+        switchLocalMediaDevice,
+        startScreenShare
     } = usePeer();
 
     const getUserMediaDevices = async() => {
@@ -112,6 +114,10 @@ const VideoPlayer = () => {
         }
         switchLocalMediaDevice(newMediaSourceIds);
         setSettingsDialogOpen(false);
+    };
+
+    const handlePresentScreen = () => {
+        startScreenShare();
     };
     
     return (
@@ -176,6 +182,9 @@ const VideoPlayer = () => {
                             </IconButton>
                             <IconButton onClick={() => handleAudioToggle()}>
                                 { audioEnabled ? <MicIcon color="primary"/> : <MicOffIcon color="secondary"/> }
+                            </IconButton>
+                            <IconButton onClick={() => handlePresentScreen(true)}>
+                                {<PresentToAllIcon color="primary" />}
                             </IconButton>
                             <IconButton onClick={hangup}>
                                 { <CallEndRoundedIcon color="secondary"  />}
