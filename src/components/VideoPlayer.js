@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState} from 'react';
 import { usePeer } from '../context/PeerContext';
-
-
 import { 
     Grid, 
     Paper, 
@@ -9,7 +7,6 @@ import {
     IconButton, 
     Button,
     Dialog, 
-    DialogTitle, 
     DialogActions, 
     Select,
     MenuItem
@@ -51,8 +48,7 @@ const VideoPlayer = () => {
     const [newMediaSource, setNewMediaSource] = useState({ audio: '', video: '' });
     const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
     
-    const { 
-        inSenate, 
+    const {
         setIsConnected, 
         localStream,
         remoteStreams, 
@@ -121,130 +117,126 @@ const VideoPlayer = () => {
     };
     
     return (
-        <>
-        {inSenate && (
-            <Grid item container direction='column' style={{ height: '80vh' }} wrap='nowrap'>
-                {!selectedStream ? (
-                    <Grid item container justify='center' >
-                        <Grid item xs={6} sm={3}>
-                            <Button onClick={() => setSelectedStream(localStream)}>
-                                <Video 
-                                    stream={localStream} 
-                                    muted={true}
-                                    // height={200}
-                                />
-                            </Button>
-                        </Grid>
-                        { 
-                            remoteStreams.map((stream, index) => {
-                                if(stream.active)
-                                    return (
-                                        <Grid key={index} item xs={6} sm={3}>
-                                            <Button  onClick={() => setSelectedStream(stream)}>
-                                                <Video 
-                                                    stream={stream} 
-                                                    muted={false}
-                                                />
-                                            </Button>
-                                        </Grid>
-                                    )
-                                else return null
-                            })
-                        }
-                    </Grid>
-                ) : (
-                    <Grid item container justify='center'>
-                        <Grid item sm={6}>
-                            <Video
-                                stream={selectedStream}
-                                muted={selectedStream === localStream ? true : false}
-                            />
-                        </Grid>
-                        <Grid item sm={6} container direction='column'>
-                            All streams
-                        </Grid>
-                    </Grid>
-                )}
-
-                <Grid item xs></Grid>
+        <Grid item container direction='column' style={{ height: '80vh' }} wrap='nowrap'>
+            {!selectedStream ? (
                 <Grid item container justify='center' >
-                    {/* <Grid item xs></Grid> */}
-                    <Grid item >
-                        <Paper 
-                            style={{
-                                paddingHorizontal: 10,
-                                borderRadius:20,
-                            }}
-                            elevation={5}
-                        >
-                            <IconButton onClick={() => handleVideoToggle()}>
-                                { videoEnabled ? <VideocamIcon color="primary"/> : <VideocamOffIcon color="secondary"/> }
-                            </IconButton>
-                            <IconButton onClick={() => handleAudioToggle()}>
-                                { audioEnabled ? <MicIcon color="primary"/> : <MicOffIcon color="secondary"/> }
-                            </IconButton>
-                            <IconButton onClick={() => handlePresentScreen(true)}>
-                                {<PresentToAllIcon color="primary" />}
-                            </IconButton>
-                            <IconButton onClick={hangup}>
-                                { <CallEndRoundedIcon color="secondary"  />}
-                            </IconButton>
-                            <IconButton onClick={() => setSettingsDialogOpen(true)}>
-                                {<MoreVertIcon color="primary" />}
-                            </IconButton>
-                        </Paper>
+                    <Grid item xs={6} sm={3}>
+                        <Button onClick={() => setSelectedStream(localStream)}>
+                            <Video 
+                                stream={localStream} 
+                                muted={true}
+                                // height={200}
+                            />
+                        </Button>
                     </Grid>
-                    {/* <Grid item xs></Grid> */}
+                    { 
+                        remoteStreams.map((stream, index) => {
+                            if(stream.active)
+                                return (
+                                    <Grid key={index} item xs={6} sm={3}>
+                                        <Button  onClick={() => setSelectedStream(stream)}>
+                                            <Video 
+                                                stream={stream} 
+                                                muted={false}
+                                            />
+                                        </Button>
+                                    </Grid>
+                                )
+                            else return null
+                        })
+                    }
                 </Grid>
-                            
-                <Dialog
-                    open={settingsDialogOpen}
-                    onClose={() => setSettingsDialogOpen(false)}
-                >
-                    <Typography>Audio Source</Typography>
-                    <Select
-                        label='Audio Source'
-                        variant='outlined'
-                        defaultValue={currentMediaSource.audio}
-                        onChange={(event) => setNewMediaSource(prev => ({ ...prev, audio: event.target.value }))}
-                    >
-                        {mediaDevices && mediaDevices.map((device, index) => {
-                            if (device.kind === 'audioinput') {
-                                return (
-                                    <MenuItem key={index} value={device.deviceId}>{device.label}</MenuItem >
-                                )
-                            } else
-                                return null;
-                        })}
-                    </Select>
-                    <Typography>Video Source</Typography>
-                    <Select
-                        label='Video Source'
-                        variant='outlined'
-                        defaultValue={currentMediaSource.video}
-                        onChange={(event) => setNewMediaSource(prev => ({ ...prev, video: event.target.value }))}
-                    >
-                        {mediaDevices && mediaDevices.map((device, index) => {
-                            if (device.kind === 'videoinput') {
-                                return (
-                                    <MenuItem key={index} value={device.deviceId}>{device.label}</MenuItem >
-                                )
-                            } else
-                                return null;
-                        })}
-                    </Select>
-                    <DialogActions>
-                        <Button variant="contained" onClick={() => { handleMediaSwitch() }} color="primary">
-                            Save
-                        </Button>
-                        <Button variant="contained" onClick={() => { setNewMediaSource({ audio: '', video: '' }); setSettingsDialogOpen(false); }} color="secondary" autoFocus>
-                            Cancel
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            </Grid>
+            ) : (
+                <Grid item container justify='center'>
+                    <Grid item sm={6}>
+                        <Video
+                            stream={selectedStream}
+                            muted={selectedStream === localStream ? true : false}
+                        />
+                    </Grid>
+                    <Grid item sm={6} container direction='column'>
+                        All streams
+                    </Grid>
+                </Grid>
             )}
-        </>
+
+            <Grid item xs></Grid>
+            <Grid item container justify='center' >
+                {/* <Grid item xs></Grid> */}
+                <Grid item >
+                    <Paper 
+                        style={{
+                            paddingHorizontal: 10,
+                            borderRadius:20,
+                        }}
+                        elevation={5}
+                    >
+                        <IconButton onClick={() => handleVideoToggle()}>
+                            { videoEnabled ? <VideocamIcon color="primary"/> : <VideocamOffIcon color="secondary"/> }
+                        </IconButton>
+                        <IconButton onClick={() => handleAudioToggle()}>
+                            { audioEnabled ? <MicIcon color="primary"/> : <MicOffIcon color="secondary"/> }
+                        </IconButton>
+                        <IconButton onClick={() => handlePresentScreen(true)}>
+                            {<PresentToAllIcon color="primary" />}
+                        </IconButton>
+                        <IconButton onClick={hangup}>
+                            { <CallEndRoundedIcon color="secondary"  />}
+                        </IconButton>
+                        <IconButton onClick={() => setSettingsDialogOpen(true)}>
+                            {<MoreVertIcon color="primary" />}
+                        </IconButton>
+                    </Paper>
+                </Grid>
+                {/* <Grid item xs></Grid> */}
+            </Grid>
+                        
+            <Dialog
+                open={settingsDialogOpen}
+                onClose={() => setSettingsDialogOpen(false)}
+            >
+                <Typography>Audio Source</Typography>
+                <Select
+                    label='Audio Source'
+                    variant='outlined'
+                    defaultValue={currentMediaSource.audio}
+                    onChange={(event) => setNewMediaSource(prev => ({ ...prev, audio: event.target.value }))}
+                >
+                    {mediaDevices && mediaDevices.map((device, index) => {
+                        if (device.kind === 'audioinput') {
+                            return (
+                                <MenuItem key={index} value={device.deviceId}>{device.label}</MenuItem >
+                            )
+                        } else
+                            return null;
+                    })}
+                </Select>
+                <Typography>Video Source</Typography>
+                <Select
+                    label='Video Source'
+                    variant='outlined'
+                    defaultValue={currentMediaSource.video}
+                    onChange={(event) => setNewMediaSource(prev => ({ ...prev, video: event.target.value }))}
+                >
+                    {mediaDevices && mediaDevices.map((device, index) => {
+                        if (device.kind === 'videoinput') {
+                            return (
+                                <MenuItem key={index} value={device.deviceId}>{device.label}</MenuItem >
+                            )
+                        } else
+                            return null;
+                    })}
+                </Select>
+                <DialogActions>
+                    <Button variant="contained" onClick={() => { handleMediaSwitch() }} color="primary">
+                        Save
+                    </Button>
+                    <Button variant="contained" onClick={() => { setNewMediaSource({ audio: '', video: '' }); setSettingsDialogOpen(false); }} color="secondary" autoFocus>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Grid>
     )
 }
 

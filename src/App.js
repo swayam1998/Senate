@@ -1,6 +1,6 @@
 import React from 'react';
-import { AppBar, Grid, Typography, Container, CssBaseline } from '@material-ui/core';
-import { VideoPlayer, SideBar } from './components';
+import { Grid, Container, CssBaseline } from '@material-ui/core';
+import { Player, SideBar } from './components';
 import PeerProvider from './context/PeerContext';
 import Navbar from './components/Navbar';
 
@@ -21,7 +21,7 @@ function App() {
                             justify='center'
                         >
                             <Grid item container>
-                                <VideoPlayer />
+                                <Player/>
                             </Grid>
                             <Grid item >
                                 <SideBar/>

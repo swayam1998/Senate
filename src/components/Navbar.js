@@ -1,5 +1,5 @@
 import React from 'react'
-import { AppBar, Grid, Typography, Container, CssBaseline } from '@material-ui/core';
+import { AppBar, Grid, Typography } from '@material-ui/core';
 import { usePeer } from '../context/PeerContext';
 
 const Navbar = () => {
@@ -17,7 +17,7 @@ const Navbar = () => {
                     {inSenate ? (
                         <>
                             <Typography variant='h5'>Senate ID</Typography>
-                            <Typography>{inSenate}</Typography>
+                            <Typography>{inSenate.senateId}</Typography>
                         </>
                     ) : null}
                 </Grid>

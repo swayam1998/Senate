@@ -9,13 +9,13 @@ export const usePeer = () => useContext(PeerContext);
 
 const PeerProvider = ({ children }) => {
     const [peerConnections, setPeerConnections] = useState([]);
-    const [inSenate, setInSenate] = useState(false);
+    const [inSenate, setInSenate] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
     const [localStream, setLocalStream] = useState();
     const [remoteStreams, setRemoteStreams] = useState([]);
 
     // creates and sets up a peer connection and adds it in peerConnections array
-    const createCall = async(callCollection) => {
+    const createCall = async(callCollection, mediumOptions) => {
         const callUid = nanoid();
         const userUid = callCollection.id;
         var remoteUserUid = null;
@@ -37,7 +37,7 @@ const PeerProvider = ({ children }) => {
         const remoteStream = new MediaStream();
 
         if(!localStream){
-            const userStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const userStream = await navigator.mediaDevices.getUserMedia(mediumOptions);
             setLocalStream(userStream);
 
             userStream.getTracks().forEach((track) => {
@@ -97,7 +97,7 @@ const PeerProvider = ({ children }) => {
         peerConnection.onconnectionstatechange = (event) => {
             switch (peerConnection.connectionState) {
                 case "connected":
-                    createCall(callCollection);
+                    createCall(callCollection, mediumOptions);
                     setIsConnected(true);
                     break;
                 case "disconnected":
@@ -142,15 +142,20 @@ const PeerProvider = ({ children }) => {
         peerConnection = null;
     };
 
-    const createSenate = async() => {
+    const createSenate = async(mediumOptions) => {
         const senateUid = nanoid();
         const userUid = nanoid();
 
         const senateDoc = firestore.collection('senates').doc(senateUid);
         const userCallCollection = senateDoc.collection(userUid);
         
-        createCall(userCallCollection);
-        setInSenate(senateDoc.id);
+        createCall(userCallCollection, mediumOptions);
+
+        senateDoc.set({
+            mediumOptions: mediumOptions
+        }, {merge:true});
+
+        setInSenate({senateId: senateDoc.id, ...mediumOptions });
         return senateDoc.id;
     };
 
@@ -162,14 +167,17 @@ const PeerProvider = ({ children }) => {
             return "Senate ID doesn't exist";
         }
         
-        setInSenate(senateId);
         const senateSnapshot = await senateDoc.get();
-        const remoteUsers = Object.entries(senateSnapshot.data()).map(e => ({ [e[0]]: e[1] }));
+        const mediumOptions = senateSnapshot.data().mediumOptions;
 
-        for (const user of remoteUsers) {
-            // console.log(user);
-            const userUid = (Object.keys(user))[0];
-            const callUid = (Object.values(user))[0];
+        setInSenate({ senateId: senateDoc.id, ...mediumOptions });
+
+        for (var key of Object.keys(senateSnapshot.data())) {
+            if(key === 'mediumOptions'){
+                continue;
+            }
+            const userUid = key;
+            const callUid = senateSnapshot.data()[key];
 
             if(callUid === 'Disconnected')
                 continue;
@@ -190,7 +198,7 @@ const PeerProvider = ({ children }) => {
             
             const remoteStream = new MediaStream();            
             if(!localStream){
-                const userStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const userStream = await navigator.mediaDevices.getUserMedia(mediumOptions);
                 setLocalStream(userStream);
     
                 userStream.getTracks().forEach((track) => {
@@ -261,8 +269,8 @@ const PeerProvider = ({ children }) => {
             setPeerConnections(prevState => [...prevState, peerConnection]);
         }
 
-        createCall(senateDoc.collection(localUserUid));
-        return "Joined Senate"
+        createCall(senateDoc.collection(localUserUid), mediumOptions);
+        return "Joined Senate";
     }
 
     const hangup = () => {
@@ -317,29 +325,33 @@ const PeerProvider = ({ children }) => {
                         if (sender.track.kind === "audio" && newAudioTrack) {
                             sender.replaceTrack(newAudioTrack)
                             .then(() => {
-                                let newStream = new MediaStream();
-                                localStream.getTracks().forEach(track => {
-                                    if(track.kind === 'audio'){
-                                        newStream.addTrack(newAudioTrack);
-                                    }else{
-                                        newStream.addTrack(track);
-                                    }
-                                })
-                                setLocalStream(newStream);
+                                if(localStream.getAudioTracks()[0].id !== newAudioTrack.id){
+                                    let newStream = new MediaStream();
+                                    localStream.getTracks().forEach(track => {
+                                        if(track.kind === 'audio'){
+                                            newStream.addTrack(newAudioTrack);
+                                        }else{
+                                            newStream.addTrack(track);
+                                        }
+                                    })
+                                    setLocalStream(newStream);
+                                }
                             });
                         }
                         if (sender.track.kind === "video" && newVideoTrack) {
                             sender.replaceTrack(newVideoTrack)
                             .then(() => {
-                                let newStream = new MediaStream();
-                                localStream.getTracks().forEach(track => {
-                                    if (track.kind === 'video') {
-                                        newStream.addTrack(newVideoTrack);
-                                    } else {
-                                        newStream.addTrack(track);
-                                    }
-                                })
-                                setLocalStream(newStream);
+                                if (localStream.getVideoTracks()[0].id !== newVideoTrack.id) {
+                                    let newStream = new MediaStream();
+                                    localStream.getTracks().forEach(track => {
+                                        if (track.kind === 'video') {
+                                            newStream.addTrack(newVideoTrack); 
+                                        } else {
+                                            newStream.addTrack(track);
+                                        }
+                                    })
+                                    setLocalStream(newStream);
+                                }
                             });
                         }
                     });
@@ -348,17 +360,15 @@ const PeerProvider = ({ children }) => {
         }
     };
 
-    const changeTracks = (track) => {
-
-    }
+    // const changeTracks = (track) => {
+        //function to replace track in every rtpsender
+    // }
 
     const startScreenShare = async() => {
         const screenStream = await navigator.mediaDevices.getDisplayMedia();
         const screenTrack = screenStream.getTracks()[0];
 
         const prevVideoTrack = localStream.getTracks().filter(track => track.kind === 'video' ? track : null)[0];
-        console.log(prevVideoTrack);
-        //localStream needs to be replaced only once
         for (let peerConnection of peerConnections) {
             let senderList = peerConnection.getSenders();
             if (senderList) {
@@ -366,15 +376,17 @@ const PeerProvider = ({ children }) => {
                     if (sender.track.kind === "video") {
                         sender.replaceTrack(screenTrack)
                             .then(() => {
-                                let newStream = new MediaStream();
-                                localStream.getTracks().forEach(track => {
-                                    if (track.kind === 'video') {
-                                        newStream.addTrack(screenTrack);
-                                    } else {
-                                        newStream.addTrack(track);
-                                    }
-                                })
-                                setLocalStream(newStream);
+                                if (localStream.getVideoTracks()[0].id !== screenTrack.id) {
+                                    let newStream = new MediaStream();
+                                    localStream.getTracks().forEach(track => {
+                                        if (track.kind === 'video') {
+                                            newStream.addTrack(screenTrack);
+                                        } else {
+                                            newStream.addTrack(track);
+                                        }
+                                    })
+                                    setLocalStream(newStream);
+                                }
                             });
                     }
                 });
@@ -382,7 +394,6 @@ const PeerProvider = ({ children }) => {
         }
 
         screenTrack.onended = (event) => {
-            console.log(event);
             for (let peerConnection of peerConnections) {
                 let senderList = peerConnection.getSenders();
                 if (senderList) {
