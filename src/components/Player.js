@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { VideoPlayer, AudioPlayer } from '.';
 import { usePeer } from '../context/PeerContext';
 

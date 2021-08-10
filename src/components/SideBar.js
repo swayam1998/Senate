@@ -24,6 +24,7 @@ const SideBar = () => {
 
     const joinToSenate = () => {
         const response = joinSenate(joinSenateId.current);
+        console.log(response);
     };
 
     return !inSenate ? (
