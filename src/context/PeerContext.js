@@ -149,6 +149,7 @@ const PeerProvider = ({ children }) => {
         const senateDoc = firestore.collection('senates').doc(senateUid);
         const userCallCollection = senateDoc.collection(userUid);
         
+        //should return a promise confirming the call has been created
         createCall(userCallCollection, mediumOptions);
 
         senateDoc.set({
@@ -166,7 +167,7 @@ const PeerProvider = ({ children }) => {
         
         const senateSnapshot = await senateDoc.get();
         if(!senateSnapshot.exists){
-            return "Senate ID doesn't exist";
+            return "Senate ID doesnt exist";
         }
 
         const mediumOptions = senateSnapshot.data().mediumOptions;
@@ -423,6 +424,7 @@ const PeerProvider = ({ children }) => {
     const value = {
         isConnected,
         inSenate,
+        setInSenate,
         setIsConnected,
         localStream,
         remoteStreams,

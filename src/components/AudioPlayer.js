@@ -15,6 +15,7 @@ import MicIcon from '@material-ui/icons/Mic';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import CallEndRoundedIcon from '@material-ui/icons/CallEndRounded';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
+import { useHistory } from 'react-router-dom';
 
 const Audio = ({ stream, muted }) => {
     const ref = useRef();
@@ -24,7 +25,7 @@ const Audio = ({ stream, muted }) => {
     }, [stream]);
 
     return (
-        <Audio
+        <audio
             ref={ref}
             muted={muted}
             controls
@@ -41,12 +42,15 @@ const AudioPlayer = () => {
     const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
     
     const {
+        setInSenate,
         setIsConnected,
         localStream,
         remoteStreams,
         toggleUserAudio,
         switchLocalMediaDevice
     } = usePeer();
+    const history = useHistory();
+
 
     const getUserMediaDevices = async () => {
         try {
@@ -73,7 +77,8 @@ const AudioPlayer = () => {
 
     const hangup = () => {
         setIsConnected(false);
-        window.location.reload();
+        setInSenate(null);
+        history.push('/');
     };
 
     const handleAudioToggle = () => {
@@ -93,7 +98,7 @@ const AudioPlayer = () => {
     };
 
     return (
-        <Grid item container direction='column' style={{ height: '80vh' }} wrap='nowrap'>
+        <Grid item container direction='column' style={{ height: '80vh', paddingTop: 10 }} wrap='nowrap'>
             <Grid item container justify='center' >
                 <Grid item xs={6} sm={3}>
                     <Audio

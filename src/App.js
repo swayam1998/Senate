@@ -1,35 +1,21 @@
 import React from 'react';
-import { Grid, Container, CssBaseline } from '@material-ui/core';
-import { Player, SideBar } from './components';
+import { BrowserRouter, Switch, Route } from 'react-router-dom';
+import { CssBaseline } from '@material-ui/core';
+import { Home, Senate } from './components';
 import PeerProvider from './context/PeerContext';
 import Navbar from './components/Navbar';
 
 function App() {
     return (
         <PeerProvider>
-            <CssBaseline />
-            <Navbar />
-            <main>
-                <div>
-                    <Container maxWidth="xl">
-                        <Grid 
-                            container 
-                            direction="column" 
-                            align='center'
-                            style={{ height: '80vh' }}
-                            wrap='nowrap'
-                            justify='center'
-                        >
-                            <Grid item container>
-                                <Player/>
-                            </Grid>
-                            <Grid item >
-                                <SideBar/>
-                            </Grid>
-                        </Grid>
-                    </Container>
-                </div>
-            </main>
+            <BrowserRouter>
+                <CssBaseline />
+                <Navbar />
+                <Switch>
+                    <Route path="/" exact component={Home} />
+                    <Route path="/senates/:senateId" exact component={Senate}/>
+                </Switch>
+            </BrowserRouter>
         </PeerProvider>
     )
 }

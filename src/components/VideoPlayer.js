@@ -18,6 +18,7 @@ import MicOffIcon from '@material-ui/icons/MicOff';
 import CallEndRoundedIcon from '@material-ui/icons/CallEndRounded';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import PresentToAllIcon from '@material-ui/icons/PresentToAll';
+import { useHistory } from 'react-router-dom';
 
 const Video = ({ stream, muted, width = '100%', height }) => {
     const ref = useRef();
@@ -49,7 +50,8 @@ const VideoPlayer = () => {
     const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
     
     const {
-        setIsConnected, 
+        setInSenate,
+        setIsConnected,
         localStream,
         remoteStreams, 
         toggleUserVideo, 
@@ -57,6 +59,7 @@ const VideoPlayer = () => {
         switchLocalMediaDevice,
         startScreenShare
     } = usePeer();
+    const history = useHistory();
 
     const getUserMediaDevices = async() => {
         try {
@@ -97,7 +100,8 @@ const VideoPlayer = () => {
 
     const hangup = () => {
         setIsConnected(false);
-        window.location.reload();
+        setInSenate(null);
+        history.push('/');
     };
 
     const handleMediaSwitch = () => {
