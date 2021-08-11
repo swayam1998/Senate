@@ -99,7 +99,6 @@ const AudioPlayer = () => {
                     <Audio
                         stream={localStream}
                         muted={true}
-                    // height={200}
                     />
                 </Grid>
                 {

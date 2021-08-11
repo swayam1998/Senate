@@ -163,11 +163,12 @@ const PeerProvider = ({ children }) => {
         const localUserUid = nanoid();
 
         const senateDoc = firestore.collection('senates').doc(senateId);
-        if(!senateDoc){
-            return "Senate ID doesn't exist";
-        }
         
         const senateSnapshot = await senateDoc.get();
+        if(!senateSnapshot.exists){
+            return "Senate ID doesn't exist";
+        }
+
         const mediumOptions = senateSnapshot.data().mediumOptions;
 
         setInSenate({ senateId: senateDoc.id, ...mediumOptions });

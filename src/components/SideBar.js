@@ -1,15 +1,18 @@
 import React, { useRef, useState } from 'react'
 import { Button, Grid, Typography, TextField, Popper, Fade, Paper } from '@material-ui/core';
+import Alert from '@material-ui/lab/Alert';
 import { usePeer } from '../context/PeerContext';
 
 const SideBar = () => {
     const { inSenate, createSenate, joinSenate } = usePeer();
-    const joinSenateId = useRef();
+    const joinSenateId = useRef('');
 
+    const [showError, setShowError] = useState(null);
     const [popperOpen, setPopperOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     
     const handleSenateId = (e) => {
+        setShowError(null);
         joinSenateId.current = e.target.value;
     };
 
@@ -23,8 +26,14 @@ const SideBar = () => {
     };
 
     const joinToSenate = () => {
+        if(joinSenateId.current === ''){
+            setShowError('Needs Senate ID');
+            return;
+        }
         const response = joinSenate(joinSenateId.current);
-        console.log(response);
+        response.then((result)=>{
+            setShowError(result);
+        });
     };
 
     return !inSenate ? (
@@ -67,7 +76,8 @@ const SideBar = () => {
                     </Popper>
 
                     <Typography>or</Typography>
-                    <TextField variant="outlined" label="Senate ID" onChange={handleSenateId} fullWidth />
+                    {showError && <Alert severity="error">{showError}</Alert>}
+            <TextField error={showError} style={{ marginTop: 10 }} variant="outlined" label="Senate ID" onChange={handleSenateId} fullWidth />
                     <Button style={{ marginTop: 10 }} variant="contained" color="secondary" fullWidth onClick={joinToSenate}>
                         Join Senate
                     </Button>
