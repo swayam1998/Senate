@@ -76,9 +76,8 @@ const AudioPlayer = () => {
     }, [localStream])
 
     const hangup = () => {
-        setIsConnected(false);
-        setInSenate(null);
         history.push('/');
+        window.location.reload();
     };
 
     const handleAudioToggle = () => {

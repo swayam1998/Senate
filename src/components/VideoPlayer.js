@@ -57,7 +57,8 @@ const VideoPlayer = () => {
         toggleUserVideo, 
         toggleUserAudio,
         switchLocalMediaDevice,
-        startScreenShare
+        startScreenShare,
+        exitSenate
     } = usePeer();
     const history = useHistory();
 
@@ -99,9 +100,8 @@ const VideoPlayer = () => {
     };
 
     const hangup = () => {
-        setIsConnected(false);
-        setInSenate(null);
         history.push('/');
+        window.location.reload();
     };
 
     const handleMediaSwitch = () => {
@@ -194,7 +194,7 @@ const VideoPlayer = () => {
                 </Grid>
                 {/* <Grid item xs></Grid> */}
             </Grid>
-                        
+            
             <Dialog
                 open={settingsDialogOpen}
                 onClose={() => setSettingsDialogOpen(false)}

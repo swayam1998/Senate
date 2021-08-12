@@ -55,8 +55,6 @@ const PeerProvider = ({ children }) => {
             });
         };
 
-        setRemoteStreams(prevState => [...prevState, remoteStream]);        
-
         peerConnection.onicecandidate = (event) => {
             // console.log("ICE create: ", event)
             event.candidate && offerCandidateCollection.add(event.candidate.toJSON());;
@@ -97,8 +95,9 @@ const PeerProvider = ({ children }) => {
         peerConnection.onconnectionstatechange = (event) => {
             switch (peerConnection.connectionState) {
                 case "connected":
-                    createCall(callCollection, mediumOptions);
+                    setRemoteStreams(prevState => [...prevState, remoteStream]);
                     setIsConnected(true);
+                    createCall(callCollection, mediumOptions);
                     break;
                 case "disconnected":
                     setRemoteStreams(prevState => prevState.filter((stream) => stream !== remoteStream));
@@ -109,7 +108,8 @@ const PeerProvider = ({ children }) => {
                     }, { merge: true });
 
                     closeCall(peerConnection);
-                    break;            
+                    break;
+                
                 default:
                     break;
             }
@@ -180,9 +180,6 @@ const PeerProvider = ({ children }) => {
             }
             const userUid = key;
             const callUid = senateSnapshot.data()[key];
-
-            if(callUid === 'Disconnected')
-                continue;
             
             const callDoc = senateDoc.collection(userUid).doc(callUid);
             const answerCandidateCollection = callDoc.collection('answerCandidates');
@@ -218,8 +215,6 @@ const PeerProvider = ({ children }) => {
                 });
             };
 
-            setRemoteStreams(prevState => [...prevState, remoteStream]);
-
             peerConnection.onicecandidate = (event) => {
                 // console.log("ICE join: ",event);
                 event.candidate && answerCandidateCollection.add(event.candidate.toJSON());
@@ -250,8 +245,16 @@ const PeerProvider = ({ children }) => {
             });
 
             peerConnection.onconnectionstatechange = (event) => {
+                console.log("event: ", event);
+                console.log("connectionState: ", peerConnection.connectionState);
                 switch (peerConnection.connectionState) {
+                    case "failed":
+                        senateDoc.update({
+                            [userUid]: firebase.firestore.FieldValue.delete()
+                        }, { merge: true }).then((result) => console.log("failed, doc deleted: ", result));
+                        break;
                     case "connected":
+                        setRemoteStreams(prevState => [...prevState, remoteStream]);
                         setIsConnected(true);
                         break;
                     case "disconnected":
@@ -259,7 +262,7 @@ const PeerProvider = ({ children }) => {
 
                         senateDoc.update({
                             [userUid]: firebase.firestore.FieldValue.delete()
-                        }, { merge: true });
+                        }, { merge: true }).then((result) => console.log("disconnected, doc deleted: ", result));
 
                         closeCall(peerConnection);
                         break;
@@ -275,9 +278,11 @@ const PeerProvider = ({ children }) => {
         return "Joined Senate";
     }
 
-    const hangup = () => {
-        console.log(peerConnections);
-    }
+    const exitSenate = () => {
+        for(let peerConnection of peerConnections){
+            closeCall(peerConnection);
+        }
+    };
 
     const toggleUserVideo = () => {
         for(let peerConnection of peerConnections){
@@ -430,7 +435,7 @@ const PeerProvider = ({ children }) => {
         remoteStreams,
         createSenate,
         joinSenate,
-        hangup,
+        exitSenate,
         toggleUserVideo,
         toggleUserAudio,
         switchLocalMediaDevice,
