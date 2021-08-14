@@ -42,12 +42,11 @@ const AudioPlayer = () => {
     const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
     
     const {
-        setInSenate,
-        setIsConnected,
         localStream,
         remoteStreams,
         toggleUserAudio,
-        switchLocalMediaDevice
+        switchLocalMediaDevice,
+        exitSenate
     } = usePeer();
     const history = useHistory();
 
@@ -76,6 +75,7 @@ const AudioPlayer = () => {
     }, [localStream])
 
     const hangup = () => {
+        exitSenate();
         history.push('/');
         window.location.reload();
     };

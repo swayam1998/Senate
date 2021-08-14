@@ -9,7 +9,8 @@ import {
     Dialog, 
     DialogActions, 
     Select,
-    MenuItem
+    MenuItem,
+    Box
 } from '@material-ui/core';
 import VideocamIcon from '@material-ui/icons/Videocam';
 import VideocamOffIcon from '@material-ui/icons/VideocamOff';
@@ -18,6 +19,7 @@ import MicOffIcon from '@material-ui/icons/MicOff';
 import CallEndRoundedIcon from '@material-ui/icons/CallEndRounded';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import PresentToAllIcon from '@material-ui/icons/PresentToAll';
+import CloseIcon from '@material-ui/icons/Close';
 import { useHistory } from 'react-router-dom';
 
 const Video = ({ stream, muted, width = '100%', height }) => {
@@ -50,8 +52,6 @@ const VideoPlayer = () => {
     const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
     
     const {
-        setInSenate,
-        setIsConnected,
         localStream,
         remoteStreams, 
         toggleUserVideo, 
@@ -100,8 +100,11 @@ const VideoPlayer = () => {
     };
 
     const hangup = () => {
+        // history.push('/');
+        exitSenate();
         history.push('/');
         window.location.reload();
+
     };
 
     const handleMediaSwitch = () => {
@@ -151,15 +154,52 @@ const VideoPlayer = () => {
                     }
                 </Grid>
             ) : (
-                <Grid item container justify='center'>
-                    <Grid item sm={6}>
-                        <Video
-                            stream={selectedStream}
-                            muted={selectedStream === localStream ? true : false}
-                        />
+                <Grid item container justify='center' alignItems='center' style={{padding:10}}>
+                    <Grid item xs={6}>
+                        <Box position='absolute' zIndex={1} >
+                            <IconButton style ={{ top: '2vh', left: '1vw',width:'2vw', height: '4vh' }} onClick={() => { setSelectedStream(null) }} >
+                                {<CloseIcon color="secondary" />}
+                            </IconButton>
+                        </Box>
+                        <Box>
+                            <Video
+                                stream={selectedStream}
+                                muted={selectedStream === localStream ? true : false}
+                            />
+                        </Box>
                     </Grid>
-                    <Grid item sm={6} container direction='column'>
-                        All streams
+                        <Grid item container xs={2} direction='column' align='center'>
+                        <div style={{overflowY: 'scroll', height: '70vh'}}>
+                            {
+                                remoteStreams.map((stream, index) => {
+                                    if (stream.active && stream !== selectedStream)
+                                        return (
+                                            <Grid key={index} item xs>
+                                                <Button onClick={() => setSelectedStream(stream)}>
+                                                    <Video
+                                                        stream={stream}
+                                                        muted={false}
+                                                    />
+                                                </Button>
+                                            </Grid>
+                                        )
+                                    else return null
+                                })
+                            }
+                            {
+                                localStream !== selectedStream ? (
+                                    <Grid item xs>
+                                        <Button onClick={() => setSelectedStream(localStream)}>
+                                            <Video
+                                                stream={localStream}
+                                                muted={true}
+                                            // height={200}
+                                            />
+                                        </Button>
+                                    </Grid>
+                                ) : null
+                            }
+                        </div>
                     </Grid>
                 </Grid>
             )}

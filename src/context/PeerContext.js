@@ -11,7 +11,7 @@ const PeerProvider = ({ children }) => {
     const [peerConnections, setPeerConnections] = useState([]);
     const [inSenate, setInSenate] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
-    const [localStream, setLocalStream] = useState();
+    const [localStream, setLocalStream] = useState(null);
     const [remoteStreams, setRemoteStreams] = useState([]);
 
     // creates and sets up a peer connection and adds it in peerConnections array
@@ -101,6 +101,7 @@ const PeerProvider = ({ children }) => {
                     break;
                 case "disconnected":
                     setRemoteStreams(prevState => prevState.filter((stream) => stream !== remoteStream));
+                    remoteStream.getTracks().forEach(track => track.stop());
 
                     //check whether remote user is present in senate document
                     callCollection.parent.update({
@@ -124,7 +125,10 @@ const PeerProvider = ({ children }) => {
 
     const closeCall = (peerConnection) => {
         setPeerConnections(prevState => prevState.filter( pc => pc !== peerConnection));
-        
+
+        peerConnection.getSenders().forEach(sender => sender.track.stop());
+        peerConnection.getReceivers().forEach(receiver => receiver.track.stop());
+
         peerConnection.ontrack = null;
         peerConnection.onicecandidate = null;
         peerConnection.onconnectionstatechange = null;
@@ -245,8 +249,6 @@ const PeerProvider = ({ children }) => {
             });
 
             peerConnection.onconnectionstatechange = (event) => {
-                console.log("event: ", event);
-                console.log("connectionState: ", peerConnection.connectionState);
                 switch (peerConnection.connectionState) {
                     case "failed":
                         senateDoc.update({
@@ -282,11 +284,15 @@ const PeerProvider = ({ children }) => {
         for(let peerConnection of peerConnections){
             closeCall(peerConnection);
         }
+        setPeerConnections([]);
+        setInSenate(null);
+        setIsConnected(false);
+        setLocalStream(null);
+        setRemoteStreams([]);
     };
 
     const toggleUserVideo = () => {
         for(let peerConnection of peerConnections){
-
             let senderList = peerConnection.getSenders();
             if(senderList){
                 senderList.forEach( sender => {
